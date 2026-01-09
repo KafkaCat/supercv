@@ -1,43 +1,45 @@
-# WonderCV 本地简约版
+# SuperCV (Local Resume Builder)
 
-一个基于 React + Vite + Tailwind CSS 开发的本地简历编辑器，支持实时预览、PDF 导出和多版本管理。
+[![中文](https://img.shields.io/badge/README-中文-blue)](README.zh-CN.md)
 
-## 功能特性
-- **所见即所得**：左侧编辑，右侧实时预览 A4 排版效果。
-- **本地存储**：所有数据存储在浏览器 IndexedDB 中，安全隐私，支持离线使用。
-- **多版本管理**：随时保存简历快照，支持查看历史版本并恢复。
-- **PDF 导出**：一键生成高清 PDF 简历。
-- **简约设计**：专注于内容，无干扰的编辑体验。
+A local resume editor built with React + Vite + Tailwind CSS, featuring real-time preview, PDF export, and version history.
 
-## 技术栈
+## Features
+- **WYSIWYG editing**: Edit on the left, preview A4 layout in real time.
+- **Local-first storage**: All data stays in your browser (IndexedDB) for privacy; works offline.
+- **Version history**: Save snapshots anytime, view and restore previous versions.
+- **PDF export**: Generate a high-quality PDF with one click.
+- **Smart Fit (One Page)**: Auto-adjust font size and line height to fit a single page.
+- **Minimal design**: Focus on content with a distraction-free editing experience.
+
+## Tech Stack
 - React 18 + TypeScript
 - Vite
 - Tailwind CSS
-- Zustand (状态管理)
+- Zustand (state management)
 - Dexie.js (IndexedDB)
-- React-Quill (富文本)
-- html2pdf.js (PDF生成)
+- React-Quill (rich text editor)
+- html2pdf.js (PDF export)
 
-## 安装与运行
-
-1. 安装依赖
+## Getting Started
+1. Install dependencies
 ```bash
 npm install
 ```
 
-2. 启动开发服务器
+2. Start the dev server
 ```bash
 npm run dev
 ```
 
-3. 构建生产版本
+3. Build for production
 ```bash
 npm run build
 ```
 
-## 使用说明
-1. **编辑**：在左侧各个模块输入内容，支持富文本格式。
-2. **保存**：点击右上角“保存”按钮，当前状态将作为一个新版本存储。
-3. **新建**：点击“新建”清空当前内容（建议先保存）。
-4. **版本恢复**：点击“版本”按钮打开侧边栏，查看历史记录并恢复任意版本。
-5. **导出**：点击“导出 PDF”下载简历文件。
+## Usage
+1. **Edit**: Fill in each module on the left. Rich text is supported.
+2. **Save**: Click “Save” in the top-right to store a new snapshot.
+3. **New**: Click “New” to clear current content (recommended to save first).
+4. **Restore**: Click “History” to open the sidebar and restore any snapshot.
+5. **Export**: Click “Export PDF” to download your resume as a PDF.
