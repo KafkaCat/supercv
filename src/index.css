@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.rich-text-content:not(.ql-editor) ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.rich-text-content:not(.ql-editor) ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+.rich-text-content:not(.ql-editor) li {
+  margin: 0.25rem 0;
+}
+
+.rich-text-content.ql-editor {
+  padding: 0;
+  height: auto;
+  line-height: inherit;
+  overflow: visible;
+}
+
+.rich-text-content.ql-editor > * {
+  cursor: inherit;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+  }
+}
