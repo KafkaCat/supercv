@@ -1,0 +1,5 @@
+{
+  "name": "Resume Architect AI",
+  "description": "A smart resume editor with version history, AI translation, and diff visualization.",
+  "requestFramePermissions": []
+}

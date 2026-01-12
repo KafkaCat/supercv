@@ -1,0 +1,100 @@
+{
+  "common": {
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "import": "Import",
+    "export": "Export",
+    "new": "New",
+    "create": "Create",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "sections": {
+    "profile": "Profile",
+    "education": "Education",
+    "experience": "Work Experience",
+    "skills": "Skills",
+    "custom": "Custom Section",
+    "order": "Section Order"
+  },
+  "fields": {
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "location": "Location",
+    "link": "Link/Portfolio",
+    "summary": "Summary",
+    "school": "School",
+    "degree": "Degree",
+    "company": "Company",
+    "position": "Position",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "present": "Present",
+    "description": "Description"
+  },
+  "header": {
+    "title": "WonderCV Local",
+    "import_pdf": "Import PDF",
+    "new_resume": "New Resume",
+    "switch_language": "Switch UI Language",
+    "smart_layout": "Smart Layout",
+    "translate_resume": "Translate Content",
+    "history": "History",
+    "download_pdf": "Download PDF",
+    "archives": "Archives"
+  },
+  "resume": {
+    "language_label": "Resume Language",
+    "version_en": "English Version",
+    "version_zh": "Chinese Version",
+    "copy_suffix": " (Copy)"
+  },
+  "ai": {
+    "enhance": "AI Enhance",
+    "analyzing": "Analyzing...",
+    "suggestions": "AI Suggestions",
+    "original": "Original",
+    "improved": "Improved",
+    "accept": "Accept",
+    "reject": "Reject",
+    "no_suggestions": "No suggestions available.",
+    "error": "AI Error"
+  },
+  "archive": {
+    "title": "Archived Items",
+    "empty": "No archived items found.",
+    "restore": "Restore",
+    "delete_permanently": "Delete Permanently"
+  },
+  "messages": {
+    "import_confirm": "Importing PDF will overwrite unsaved changes. Continue?",
+    "import_success": "Import successful!",
+    "import_fail": "Import failed.",
+    "import_fail_empty": "Could not extract text from PDF. Please ensure it is a text-based PDF, not a scanned image.",
+    "translate_confirm": "This will create a translated copy. Continue?"
+  },
+  "import": {
+    "confirm_title": "Confirm Import",
+    "extracted_warning": "The system has extracted the following information. Please verify before importing. Missing information (like detailed work experience) may need manual entry.",
+    "basic_info": "Basic Info",
+    "skills_title": "Skills / Keywords",
+    "skills_hint": "* Skills will support rich text editing after import",
+    "confirm_btn": "Confirm & Import",
+    "no_experience": "No experience extracted",
+    "no_education": "No education extracted",
+    "add_section": "Add Section",
+    "select_section": "Select section to add",
+    "academic_experience": "Academic Experience",
+    "custom_section": "Custom Section",
+    "summary": "Summary",
+    "remove_section": "Remove Section"
+  }
+}

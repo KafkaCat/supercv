@@ -1,8 +1,18 @@
+export interface ChangeLogItem {
+  id: string;
+  date: number;
+  type: 'update' | 'add' | 'delete';
+  section: string;
+  description: string;
+  previousContent?: any; // Snapshot of content before change/deletion
+}
+
 export interface Resume {
   id: string;
   updatedAt: number;
   title: string;
   language: 'zh' | 'en';
+  jobDescription?: string;
   translationGroupId?: string;
   layout?: {
     fontSize: string;
@@ -13,9 +23,11 @@ export interface Resume {
     zh?: Resume['layout'];
     en?: Resume['layout'];
   };
+  changeLog?: ChangeLogItem[];
   profile: Profile;
   educations: Education[];
   experiences: Experience[];
+  projects: Project[];
   skills: SkillSection;
   customSections: CustomSection[];
 }
@@ -42,6 +54,15 @@ export interface Experience {
   id: string;
   company: string;
   position: string;
+  startDate: string;
+  endDate: string;
+  description?: string; // HTML content
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  role: string;
   startDate: string;
   endDate: string;
   description?: string; // HTML content

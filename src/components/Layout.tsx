@@ -1,39 +1,63 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { ProfileEditor } from './editor/ProfileEditor';
 import { ExperienceEditor } from './editor/ExperienceEditor';
 import { EducationEditor } from './editor/EducationEditor';
+import { ProjectEditor } from './editor/ProjectEditor';
 import { SkillsEditor } from './editor/SkillsEditor';
 import { ResumePreview } from './preview/ResumePreview';
-import { Download, Save, History, Plus, Languages, Copy, Upload, Wand2, ChevronUp, ChevronDown } from 'lucide-react';
-import { useResumeStore } from '../store/useResumeStore';
+import { Download, Plus, Languages, Wand2, FileText, Check, Cloud } from 'lucide-react';
+import { useResumeStore, SectionKey } from '../store/useResumeStore';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
-import { VersionHistory } from './VersionHistory';
-import { translations } from '../i18n';
+import { AISuggestionsPanel } from './ui/AISuggestionsPanel';
 import { extractTextFromPdf, parseResumeFromText } from '../utils/pdfImport';
 import { ImportFallbackModal } from './ImportFallbackModal';
 import { ImportConfirmModal } from './ImportConfirmModal';
 import { Resume } from '../types';
+import { useTranslation } from 'react-i18next';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableItem } from './ui/SortableItem';
 
-export const Layout: React.FC = () => {
-  const { saveResume, createNewResume, translateToLanguage, isSaving, currentResume, updateSection, setResume, appLanguage, setAppLanguage, sectionOrder, moveSection } = useResumeStore();
-  const [showHistory, setShowHistory] = React.useState(false);
-  const [isImporting, setIsImporting] = React.useState(false);
-  const [showImportFallback, setShowImportFallback] = React.useState(false);
-  const [showImportConfirm, setShowImportConfirm] = React.useState(false);
-  const [fallbackText, setFallbackText] = React.useState('');
-  const [pendingResume, setPendingResume] = React.useState<Partial<Resume> | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+import { LeftSidebar } from './LeftSidebar';
+import { RightSidebar } from './RightSidebar';
+import { SessionSidebar } from './SessionSidebar';
+import { FitScoreModal } from './FitScoreModal';
+import { AddSectionModal } from './AddSectionModal';
+
+import { CustomSectionEditor } from './editor/CustomSectionEditor';
+
+interface LayoutProps {
+  onBackToLanding: () => void;
+}
+
+export const Layout: React.FC<LayoutProps> = ({ onBackToLanding }) => {
+  const { t, i18n } = useTranslation();
+  const { 
+    saveResume, createNewResume, translateToLanguage, translateContent, 
+    isSaving, isModified, currentResume, updateSection, setResume, 
+    appLanguage, setAppLanguage, sectionOrder, reorderSection,
+    aiState, closeAI, dismissSuggestion
+  } = useResumeStore();
+
+  // Auto-save hook
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      saveResume();
+    }, 5 * 60 * 1000); // 5 minutes
+    return () => clearInterval(interval);
+  }, [saveResume]);
+
+  const [isImporting, setIsImporting] = useState(false);
+  const [showImportFallback, setShowImportFallback] = useState(false);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [showAddSectionModal, setShowAddSectionModal] = useState(false); // State for AddSectionModal
+  const [fallbackText, setFallbackText] = useState('');
+  const [pendingResume, setPendingResume] = useState<Partial<Resume> | null>(null);
+  const [showFitModal, setShowFitModal] = useState(false);
   
-  // Use appLanguage for UI translation, but currentResume.language for resume content
-  const t = translations[appLanguage];
-  const resumeLanguage = currentResume.language || appLanguage;
-  const sectionTranslations = translations[resumeLanguage];
-  const sectionLabels = {
-    education: sectionTranslations.education,
-    experience: sectionTranslations.experience,
-    skills: sectionTranslations.skills
-  };
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const defaultLayout = {
     fontSize: 14,
     lineHeight: 1.5,
@@ -44,30 +68,83 @@ export const Layout: React.FC = () => {
     lineHeight: { min: 1.15, max: 1.7 },
     margin: { min: 8, max: 22 }
   };
-  const defaultLayoutStrings = {
-    fontSize: `${defaultLayout.fontSize}px`,
-    lineHeight: `${defaultLayout.lineHeight}`,
-    margin: `${defaultLayout.margin}mm`
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = sectionOrder.indexOf(active.id as SectionKey);
+      const newIndex = sectionOrder.indexOf(over?.id as SectionKey);
+      reorderSection(arrayMove(sectionOrder, oldIndex, newIndex));
+    }
   };
 
   const handleLanguageToggle = () => {
-     const newLang: Resume['language'] = resumeLanguage === 'zh' ? 'en' : 'zh';
-     const currentLayout = currentResume.layout || defaultLayoutStrings;
-     const storedLayouts = currentResume.layoutByLanguage || {};
-     const nextLayout = storedLayouts[newLang] || currentLayout;
-     updateSection('layoutByLanguage', { ...storedLayouts, [resumeLanguage]: currentLayout });
-     updateSection('layout', nextLayout);
+     const newLang = appLanguage === 'zh' ? 'en' : 'zh';
      setAppLanguage(newLang);
-     updateSection('language', newLang);
+     i18n.changeLanguage(newLang);
   };
 
   const handleTranslateResume = async () => {
-    const targetLang: Resume['language'] = resumeLanguage === 'zh' ? 'en' : 'zh';
-    const found = await translateToLanguage(targetLang);
-    setAppLanguage(targetLang);
-    if (!found) {
-      alert('未找到目标语言版本，已复制当前内容，请手动翻译。');
+    if (!confirm(t('messages.translate_confirm'))) return;
+    const targetLang: Resume['language'] = currentResume.language === 'zh' ? 'en' : 'zh';
+    await translateContent(targetLang);
+  };
+
+  const handleAddSection = (type: string, title: string) => {
+    // Basic mapping or direct addition logic
+    if (['education', 'experience', 'projects', 'skills'].includes(type)) {
+       // Just ensure it's in order
+       if (!sectionOrder.includes(type as SectionKey)) {
+         reorderSection([...sectionOrder, type as SectionKey]);
+         // Log change
+         useResumeStore.getState().logChange('add', type, `Enabled ${title} section`);
+       }
+       // Auto-scroll to section logic could go here
+    } else {
+       // Custom section
+       const newId = `custom-${Date.now()}`;
+       const newSection = {
+         id: newId,
+         title: title,
+         content: ''
+       };
+       updateSection('customSections', [...(currentResume.customSections || []), newSection]);
+       // Add to order
+       reorderSection([...sectionOrder, newId]);
+       useResumeStore.getState().logChange('add', 'Custom Section', `Added new section: ${title}`);
     }
+    setShowAddSectionModal(false);
+  };
+
+  const handleRemoveSection = (sectionId: SectionKey) => {
+    // Snapshot the section content before deleting
+    let previousContent: any = null;
+    const { currentResume } = useResumeStore.getState();
+    
+    if (sectionId === 'education') previousContent = currentResume.educations;
+    else if (sectionId === 'experience') previousContent = currentResume.experiences;
+    else if (sectionId === 'projects') previousContent = currentResume.projects;
+    else if (sectionId === 'skills') previousContent = currentResume.skills;
+    else if (sectionId.startsWith('custom-')) {
+       previousContent = currentResume.customSections?.find(s => s.id === sectionId);
+    }
+
+    const newOrder = sectionOrder.filter(id => id !== sectionId);
+    reorderSection(newOrder);
+    
+    // If it's a custom section, maybe remove from data too?
+    if (sectionId.startsWith('custom-')) {
+        const newCustom = (currentResume.customSections || []).filter(s => s.id !== sectionId);
+        updateSection('customSections', newCustom);
+    }
+    useResumeStore.getState().logChange('delete', sectionId, `Removed section`, previousContent);
   };
 
   const handleOptimizeLayout = async () => {
@@ -107,7 +184,7 @@ export const Layout: React.FC = () => {
       updateSection('layout', nextLayout);
       updateSection('layoutByLanguage', {
         ...(currentResume.layoutByLanguage || {}),
-        [resumeLanguage]: nextLayout
+        [currentResume.language]: nextLayout
       });
     };
 
@@ -155,7 +232,6 @@ export const Layout: React.FC = () => {
   };
 
   const handleImportClick = () => {
-    // Reset value to allow selecting same file again
     if (fileInputRef.current) {
         fileInputRef.current.value = '';
     }
@@ -171,16 +247,15 @@ export const Layout: React.FC = () => {
       return;
     }
 
-    if (!confirm('导入 PDF 将覆盖当前未保存的内容（建议先保存），是否继续？')) {
+    if (!confirm(t('messages.import_confirm'))) {
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
     setIsImporting(true);
     try {
-      // Create a timeout promise to prevent infinite hanging
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('导入超时，请重试')), 10000)
+        setTimeout(() => reject(new Error('Timeout')), 10000)
       );
       
       const text = await Promise.race([
@@ -188,48 +263,29 @@ export const Layout: React.FC = () => {
         timeoutPromise
       ]) as string;
       
-      console.log('Extracted text length:', text?.length);
-
       if (!text || text.trim().length === 0) {
-        throw new Error('提取的文本为空');
+        throw new Error('Empty text');
       }
 
-      if (text.length < 50) { // Increased threshold slightly
-          // Instead of just returning, offer manual entry
-          if (confirm('提示：提取的文本内容过少，该 PDF 可能是纯图片扫描件。是否尝试手动粘贴文本进行解析？')) {
-             setFallbackText(text); // Pass whatever little text we got
+      if (text.length < 50) {
+          if (confirm('Text extraction minimal. Probably scanned PDF. Try manual paste?')) {
+             setFallbackText(text);
              setShowImportFallback(true);
           }
           setIsImporting(false);
           return;
       }
 
-      const partialResume = parseResumeFromText(text);
-      
-      // Instead of applying directly, show confirm modal
+      const partialResume = parseResumeFromText(text, appLanguage);
       setPendingResume(partialResume);
       setShowImportConfirm(true);
       
     } catch (error: any) {
       console.error('PDF Import failed:', error);
-      let msg = '导入失败，可能是 PDF 格式不支持。';
-      let shouldOfferFallback = true;
-
-      if (error.message === '提取的文本为空') {
-          msg = '导入失败：无法从 PDF 中提取文本，该文件可能由图片组成。';
-      } else if (error.name === 'MissingPDFException') {
-          msg = '导入失败：文件读取错误。';
-          shouldOfferFallback = false;
-      } else if (error.message === '导入超时，请重试') {
-          msg = '导入超时，请重试。';
-      }
-      
-      if (shouldOfferFallback) {
-        if (confirm(`${msg}\n是否尝试手动粘贴文本进行解析？`)) {
-            setShowImportFallback(true);
-        }
+      if (error.message === 'Empty text') {
+        alert(t('messages.import_fail_empty') + (error.details ? ` (${error.details})` : ''));
       } else {
-        alert(msg);
+        alert(t('messages.import_fail') + ` ${error.message || ''}`);
       }
     } finally {
       setIsImporting(false);
@@ -238,7 +294,6 @@ export const Layout: React.FC = () => {
   };
 
   const handleConfirmImport = (finalResume: Partial<Resume>) => {
-    // Merge with default structure to ensure validity
     const newResume = {
       ...currentResume,
       ...finalResume,
@@ -253,7 +308,7 @@ export const Layout: React.FC = () => {
     setResume(newResume as any);
     setShowImportConfirm(false);
     setPendingResume(null);
-    alert('导入成功！');
+    alert(t('messages.import_success'));
   };
 
   const handleDownloadPdf = () => {
@@ -262,7 +317,7 @@ export const Layout: React.FC = () => {
 
     const opt = {
       margin: 0,
-      filename: '我的简历.pdf',
+      filename: 'resume.pdf',
       image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
@@ -270,126 +325,173 @@ export const Layout: React.FC = () => {
     html2pdf().set(opt).from(element).save();
   };
 
+  const sectionLabels: Record<string, string> = {
+    education: t('sections.education'),
+    experience: t('sections.experience'),
+    skills: t('sections.skills')
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col font-sans relative">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 flex flex-col md:flex-row justify-between items-center sticky top-0 z-20 shadow-sm gap-4 md:gap-0">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">W</div>
-          <h1 className="text-xl font-bold text-gray-800">WonderCV Local</h1>
-        </div>
-        <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-center">
-           {/* Actions */}
-           <input 
-             type="file" 
-             ref={fileInputRef} 
-             onChange={handleFileChange} 
-             accept="application/pdf" 
-             className="hidden" 
-           />
-           <button onClick={handleImportClick} disabled={isImporting} className="flex items-center gap-1 md:gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors" title="导入 PDF 简历">
-             <Upload size={16} /> <span className="hidden sm:inline">{isImporting ? '导入中...' : '导入'}</span>
-           </button>
-
-           <button onClick={() => createNewResume()} className="flex items-center gap-1 md:gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors" title={t.new_resume}>
-             <Plus size={16} /> <span className="hidden sm:inline">新建</span>
-           </button>
-           
-           <button
-             onClick={handleLanguageToggle}
-             className="flex items-center gap-1 md:gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-             title="切换简历语言"
-           >
-             <Languages size={16} />
-             <span>简历: {resumeLanguage === 'zh' ? '中文' : 'English'}</span>
-           </button>
-
-           <button onClick={handleOptimizeLayout} className="flex items-center gap-1 md:gap-2 px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded-md transition-colors" title="智能一页排版">
-             <Wand2 size={16} /> <span className="hidden sm:inline">智能一页</span>
-           </button>
-
-           <button
-             onClick={handleTranslateResume}
-             className="flex items-center gap-1 md:gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-             title={resumeLanguage === 'zh' ? '创建英文副本' : '创建中文副本'}
-           >
-              <Copy size={16} /> <span className="hidden sm:inline">{resumeLanguage === 'zh' ? '转译为英文' : '转译为中文'}</span>
-           </button>
-
-           <button onClick={() => setShowHistory(true)} className="flex items-center gap-1 md:gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
-             <History size={16} /> <span className="hidden sm:inline">版本</span>
-           </button>
-           <button onClick={() => saveResume()} disabled={isSaving} className="flex items-center gap-1 md:gap-2 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md font-medium transition-colors">
-             <Save size={16} /> {isSaving ? '保存中...' : '保存'}
-           </button>
-           <button onClick={handleDownloadPdf} className="flex items-center gap-1 md:gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow-sm transition-colors">
-             <Download size={16} /> 导出 PDF
-           </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-[1800px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
-        {/* Editor Column */}
-        <div className="space-y-6 overflow-y-auto pb-20">
-          <section className="space-y-3 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-2">区块排序</h2>
-            <div className="space-y-2">
-              {sectionOrder.map((section, index) => (
-                <div key={section} className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                  <span className="text-sm font-medium text-gray-700">{sectionLabels[section]}</span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => moveSection(section, 'up')}
-                      disabled={index === 0}
-                      className="p-1 text-gray-500 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed"
-                      title="上移"
-                    >
-                      <ChevronUp size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveSection(section, 'down')}
-                      disabled={index === sectionOrder.length - 1}
-                      className="p-1 text-gray-500 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed"
-                      title="下移"
-                    >
-                      <ChevronDown size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <ProfileEditor />
-          {sectionOrder.map((section) => (
-            <React.Fragment key={section}>
-              {section === 'education' && <EducationEditor />}
-              {section === 'experience' && <ExperienceEditor />}
-              {section === 'skills' && <SkillsEditor />}
-            </React.Fragment>
-          ))}
-        </div>
-
-        {/* Preview Column */}
-        <div className="hidden lg:block sticky top-24 overflow-hidden rounded shadow-lg border border-gray-200 bg-gray-500/10 p-4 flex justify-center">
-           <ResumePreview />
-        </div>
-        
-        {/* Mobile Preview Button or Modal? For now just hidden on small screens or stacked below */}
-        <div className="lg:hidden block bg-white p-4 rounded shadow border border-gray-200 overflow-x-auto">
-          <h3 className="text-lg font-bold mb-4 text-center">预览</h3>
-          <div className="min-w-[210mm] transform scale-50 origin-top-left h-[150mm]">
-             <ResumePreview />
-          </div>
-        </div>
-      </main>
-
-      {/* Version History Sidebar */}
-      {showHistory && <VersionHistory onClose={() => setShowHistory(false)} />}
+    <div className="h-screen flex font-body bg-slate-900 text-slate-100 overflow-hidden">
+      <FitScoreModal isOpen={showFitModal} onClose={() => setShowFitModal(false)} />
       
+      {/* Global Sidebar - Leftmost Column */}
+      <SessionSidebar 
+          onSelectSession={(resume) => setResume(resume)} 
+          onNewSession={createNewResume}
+          onImportClick={handleImportClick}
+      />
+
+      {/* Main Content Column */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      
+        {/* Top Header */}
+        <header className="h-14 border-b border-slate-800 bg-slate-900 px-4 flex items-center justify-between z-30 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-800 p-1.5 rounded-lg transition-colors" onClick={onBackToLanding}>
+              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded flex items-center justify-center">
+                <FileText className="text-sm text-white" size={16} />
+              </div>
+              <span className="font-bold text-sm tracking-tight text-white">Resume.ai</span>
+            </div>
+            <div className="h-4 w-px bg-slate-700 mx-2"></div>
+            
+            <div className="relative group">
+              <span className="flex items-center gap-2 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-lg text-slate-300">
+                {currentResume.title || 'Untitled'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              accept="application/pdf" 
+              className="hidden" 
+            />
+            
+            <button onClick={() => createNewResume()} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title={t('common.new')}>
+              <Plus size={18} />
+            </button>
+
+            <button onClick={handleLanguageToggle} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title={t('header.switch_language')}>
+              <Languages size={18} />
+            </button>
+            
+            <button onClick={handleOptimizeLayout} className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-bold rounded-lg border border-indigo-500/20 transition-all mr-2">
+              <Wand2 size={16} /> Smart Fit
+            </button>
+
+            <span className="text-xs text-slate-500 mr-2 flex items-center gap-1 min-w-[80px] justify-end">
+              {isSaving ? (
+                <>
+                   <Cloud className="animate-pulse text-xs" size={14} />
+                   Saving...
+                </>
+              ) : isModified ? (
+                <>
+                   <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                   Unsaved
+                </>
+              ) : (
+                <>
+                   <Check className="text-xs" size={14} />
+                   Saved
+                </>
+              )}
+            </span>
+            
+            <button 
+              onClick={() => saveResume()}
+              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors shadow-lg shadow-blue-500/20 ${
+                isModified ? 'bg-primary hover:bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'
+              }`}
+            >
+              Save
+            </button>
+            
+            <button 
+                onClick={handleDownloadPdf}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                title="Download PDF"
+              >
+                <Download size={18} />
+            </button>
+          </div>
+        </header>
+
+        {/* Main Workspace - Split Screen */}
+        <div className="flex-1 flex overflow-hidden relative">
+          
+          <LeftSidebar 
+            onAddSection={() => setShowAddSectionModal(true)} 
+            onAiAssistantClick={() => setShowFitModal(true)}
+          />
+          
+          {/* Left: Form Editor (40% width) */}
+          <div className="w-[450px] xl:w-[500px] flex-shrink-0 flex flex-col border-r border-slate-800 z-10 bg-slate-900/50">
+            <div className="flex-1 overflow-y-auto p-4 pb-20 space-y-6">
+                <section className="space-y-3 p-4 bg-slate-800/50 rounded-lg shadow-sm border border-slate-700">
+                  <h2 className="text-lg font-semibold text-slate-200 border-b border-slate-700 pb-2 mb-2">{t('sections.order')}</h2>
+                  <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext 
+                      items={sectionOrder}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-2">
+                      {sectionOrder.map((section) => (
+                        <SortableItem key={section} id={section} onRemove={() => handleRemoveSection(section)}>
+                          <div className="flex items-center justify-between rounded-md border border-slate-600 bg-slate-700 px-3 py-2 cursor-grab active:cursor-grabbing text-slate-300 hover:bg-slate-600">
+                            <span className="text-sm font-medium ml-6">{sectionLabels[section] || (currentResume.customSections?.find(s => s.id === section)?.title) || 'Custom Section'}</span>
+                          </div>
+                        </SortableItem>
+                      ))}
+                    </div>
+                    </SortableContext>
+                  </DndContext>
+                </section>
+
+                {/* Editors - wrapped to look better in dark mode if needed, but keeping them as is (likely white cards) */}
+                <div className="space-y-6 [&_input]:bg-white [&_textarea]:bg-white [&_select]:bg-white text-slate-800">
+                  <ProfileEditor />
+                  {sectionOrder.map((section) => {
+                    if (section === 'education') return <EducationEditor key={section} />;
+                    if (section === 'experience') return <ExperienceEditor key={section} />;
+                    if (section === 'projects') return <ProjectEditor key={section} />;
+                    if (section === 'skills') return <SkillsEditor key={section} />;
+                    // For custom sections (projects, languages, etc. mapped to custom IDs)
+                    return <CustomSectionEditor key={section} sectionId={section} />;
+                  })}
+                </div>
+            </div>
+          </div>
+
+          {/* Right: Preview (Auto width) */}
+          <div className="flex-1 bg-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-8">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur text-slate-400 px-3 py-1 rounded-full text-[10px] font-bold border border-slate-800 shadow-sm z-10 flex items-center gap-2 pointer-events-none">
+                <FileText size={12} /> Live Preview
+            </div>
+            
+            <div className="transform scale-90 origin-top shadow-2xl">
+                <ResumePreview />
+            </div>
+          </div>
+
+          {/* Far Right: History Sidebar */}
+          <RightSidebar 
+            onLogClick={(resume) => {
+              if(confirm('Load this version? Unsaved changes will be lost.')) {
+                  setResume(resume);
+              }
+            }}
+          />
+
       {/* Import Fallback Modal */}
       {showImportFallback && (
         <ImportFallbackModal 
@@ -398,10 +500,19 @@ export const Layout: React.FC = () => {
         />
       )}
 
+      {/* Add Section Modal */}
+      {showAddSectionModal && (
+        <AddSectionModal
+          isOpen={showAddSectionModal}
+          onClose={() => setShowAddSectionModal(false)}
+          onAdd={handleAddSection}
+        />
+      )}
+
       {/* Import Confirm Modal */}
-      {showImportConfirm && pendingResume && (
+      {showImportConfirm && (
         <ImportConfirmModal
-          parsedResume={pendingResume}
+          parsedResume={pendingResume || currentResume} // Reuse for adding sections
           onConfirm={handleConfirmImport}
           onCancel={() => {
             setShowImportConfirm(false);
@@ -409,6 +520,28 @@ export const Layout: React.FC = () => {
           }}
         />
       )}
+
+          {/* AI Suggestions Panel */}
+          {aiState.isOpen && (
+            <AISuggestionsPanel
+              suggestions={aiState.suggestions}
+              isLoading={aiState.isLoading}
+              onAccept={(sugg) => {
+                if (aiState.onApply) {
+                  aiState.onApply(sugg.improved);
+                }
+                closeAI();
+              }}
+              onReject={(id) => {
+                dismissSuggestion(id);
+              }}
+              onClose={closeAI}
+            />
+          )}
+        </div>
+      </div>
+
+
     </div>
   );
 };

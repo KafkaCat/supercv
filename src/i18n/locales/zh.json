@@ -1,0 +1,100 @@
+{
+  "common": {
+    "save": "保存",
+    "saving": "保存中...",
+    "cancel": "取消",
+    "confirm": "确认",
+    "close": "关闭",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "import": "导入",
+    "export": "导出",
+    "new": "新建",
+    "create": "创建",
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功"
+  },
+  "sections": {
+    "profile": "个人信息",
+    "education": "教育经历",
+    "experience": "工作经历",
+    "skills": "技能专长",
+    "custom": "自定义板块",
+    "order": "区块排序"
+  },
+  "fields": {
+    "fullName": "姓名",
+    "email": "邮箱",
+    "phone": "电话",
+    "location": "地点",
+    "link": "链接/作品集",
+    "summary": "个人总结",
+    "school": "学校",
+    "degree": "学位",
+    "company": "公司",
+    "position": "职位",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "present": "至今",
+    "description": "描述"
+  },
+  "header": {
+    "title": "WonderCV 本地版",
+    "import_pdf": "导入 PDF",
+    "new_resume": "新建简历",
+    "switch_language": "切换界面语言",
+    "smart_layout": "智能排版",
+    "translate_resume": "翻译内容",
+    "history": "版本历史",
+    "download_pdf": "导出 PDF",
+    "archives": "归档箱"
+  },
+  "resume": {
+    "language_label": "简历语言",
+    "version_en": "英文版本",
+    "version_zh": "中文版本",
+    "copy_suffix": " (副本)"
+  },
+  "ai": {
+    "enhance": "AI 润色",
+    "analyzing": "分析中...",
+    "suggestions": "AI 建议",
+    "original": "原文",
+    "improved": "优化后",
+    "accept": "接受",
+    "reject": "拒绝",
+    "no_suggestions": "暂无建议",
+    "error": "AI 错误"
+  },
+  "archive": {
+    "title": "归档项目",
+    "empty": "暂无归档项目",
+    "restore": "恢复",
+    "delete_permanently": "永久删除"
+  },
+  "messages": {
+    "import_confirm": "导入 PDF 将覆盖当前未保存的内容，是否继续？",
+    "import_success": "导入成功！",
+    "import_fail": "导入失败。",
+    "import_fail_empty": "无法从 PDF 提取文字。请确保 PDF 是文字版而非扫描图片。",
+    "translate_confirm": "将创建一个翻译副本，是否继续？"
+  },
+  "import": {
+    "confirm_title": "确认导入内容",
+    "extracted_warning": "系统已从 PDF 中提取以下信息，请在导入前核对并修正。未提取到的信息（如具体工作经历）需要您后续手动补充。",
+    "basic_info": "基本信息",
+    "skills_title": "技能/关键词提取结果",
+    "skills_hint": "* 技能部分将在导入后支持富文本编辑",
+    "confirm_btn": "确认并导入",
+    "no_experience": "未提取到工作经历",
+    "no_education": "未提取到教育经历",
+    "add_section": "添加板块",
+    "select_section": "选择要添加的板块",
+    "academic_experience": "学术经历",
+    "custom_section": "自定义板块",
+    "summary": "个人总结",
+    "remove_section": "移除该板块"
+  }
+}

@@ -1,19 +1,22 @@
 import { forwardRef, Fragment } from 'react';
 import { useResumeStore, SectionKey } from '../../store/useResumeStore';
 import { Mail, Phone, MapPin, Link as LinkIcon } from 'lucide-react';
-import { translations } from '../../i18n';
+import { useTranslation } from 'react-i18next';
 
 export const ResumePreview = forwardRef<HTMLDivElement, {}>((props, ref) => {
   void props;
   const { currentResume, sectionOrder } = useResumeStore();
-  const { profile, educations, experiences, skills, language } = currentResume;
-  const t = translations[language || 'zh'];
+  const { profile, educations, experiences, projects, skills, language } = currentResume;
+  const { t } = useTranslation();
+
+  // Helper to translate labels based on Resume Language (not App Language)
+  const rt = (key: string) => t(key, { lng: language || 'zh' });
 
   const renderEducation = () => {
     if (educations.length === 0) return null;
     return (
       <section className="mb-6">
-        <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{t.education}</h2>
+        <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{rt('sections.education')}</h2>
         <div className="space-y-4">
           {educations.map(edu => (
             <div key={edu.id}>
@@ -34,7 +37,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, {}>((props, ref) => {
     if (experiences.length === 0) return null;
     return (
       <section className="mb-6">
-        <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{t.experience}</h2>
+        <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{rt('sections.experience')}</h2>
         <div className="space-y-4">
           {experiences.map(exp => (
             <div key={exp.id}>
@@ -51,11 +54,32 @@ export const ResumePreview = forwardRef<HTMLDivElement, {}>((props, ref) => {
     );
   };
 
+  const renderProjects = () => {
+    if (!projects || projects.length === 0) return null;
+    return (
+      <section className="mb-6">
+        <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{rt('sections.projects') || 'Projects'}</h2>
+        <div className="space-y-4">
+          {projects.map(proj => (
+            <div key={proj.id}>
+              <div className="flex justify-between font-bold mb-1">
+                <span>{proj.name}</span>
+                <span>{proj.startDate} - {proj.endDate}</span>
+              </div>
+              <div className="font-semibold text-gray-700 mb-1">{proj.role}</div>
+              {proj.description && <div className="rich-text-content ql-editor text-gray-600" dangerouslySetInnerHTML={{ __html: proj.description }} />}
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
   const renderSkills = () => {
     if (!skills.content || skills.content === '<p><br></p>') return null;
     return (
       <section className="mb-6">
-        <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{t.skills}</h2>
+        <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{rt('sections.skills')}</h2>
         <div className="rich-text-content ql-editor" dangerouslySetInnerHTML={{ __html: skills.content }} />
       </section>
     );
@@ -67,6 +91,8 @@ export const ResumePreview = forwardRef<HTMLDivElement, {}>((props, ref) => {
         return renderEducation();
       case 'experience':
         return renderExperience();
+      case 'projects':
+        return renderProjects();
       case 'skills':
         return renderSkills();
       default:
@@ -94,7 +120,9 @@ export const ResumePreview = forwardRef<HTMLDivElement, {}>((props, ref) => {
       >
         {/* Header */}
         <header className="border-b-2 border-gray-800 pb-4 mb-6">
-          <h1 className="text-3xl font-bold mb-3 tracking-wide">{profile.fullName || '你的名字'}</h1>
+          <h1 className={`text-3xl font-bold mb-3 tracking-wide ${!profile.fullName ? 'text-gray-300 italic' : ''}`}>
+            {profile.fullName || 'Your Name'}
+          </h1>
           <div className="flex flex-wrap gap-4 text-xs text-gray-600">
             {profile.phone && (
               <div className="flex items-center gap-1">
@@ -122,7 +150,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, {}>((props, ref) => {
         {/* Summary */}
         {profile.summary && profile.summary !== '<p><br></p>' && (
           <section className="mb-6">
-            <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{t.summary}</h2>
+            <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{rt('fields.summary')}</h2>
             <div className="rich-text-content ql-editor" dangerouslySetInnerHTML={{ __html: profile.summary }} />
           </section>
         )}
