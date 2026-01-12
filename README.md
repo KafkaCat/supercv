@@ -12,6 +12,9 @@ A local resume editor built with React + Vite + Tailwind CSS, featuring real-tim
 - **Smart Fit (One Page)**: Auto-adjust font size and line height to fit a single page.
 - **Minimal design**: Focus on content with a distraction-free editing experience.
 
+## Screenshot
+![首页截图](./Screenshot%202026-01-12%20at%2010.18.55%E2%80%AFPM.png)
+
 ## Tech Stack
 - React 18 + TypeScript
 - Vite
