@@ -1,17 +1,15 @@
 import React from 'react';
-import { FileText, PenSquare, ListPlus, LayoutGrid, Settings } from 'lucide-react';
+import { FileText, PenSquare, ListPlus, Settings } from 'lucide-react';
 
 interface LeftSidebarProps {
   onAddSection: () => void;
   onAiAssistantClick: () => void;
-  onTemplatesClick?: () => void;
   onSettingsClick?: () => void;
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({ 
   onAddSection, 
   onAiAssistantClick, 
-  onTemplatesClick,
   onSettingsClick 
 }) => {
   return (
@@ -21,7 +19,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       </div>
 
       <div className="flex flex-col gap-3 w-full px-2">
-        <button className="p-3 bg-blue-900/30 text-blue-400 rounded-xl flex flex-col items-center gap-1 group relative w-full border border-blue-500/30 transition-all" title="Content Editor">
+        <button 
+          onClick={onAiAssistantClick}
+          className="p-3 bg-blue-900/30 text-blue-400 rounded-xl flex flex-col items-center gap-1 group relative w-full border border-blue-500/30 transition-all" 
+          title="Content Editor"
+        >
           <PenSquare size={20} />
         </button>
         

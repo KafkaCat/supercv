@@ -247,7 +247,6 @@ export const parseResumeFromText = (rawText: string, uiLanguage: 'en' | 'zh' = '
 
     // Regex for Date Ranges: e.g. "2020.01 - 2021.02", "Sep 2020 - Present", "2020/01 - 2021/01"
     // Also matches just years: "2019 - 2021"
-    const dateRegex = /((19|20)\d{2}|Present|Current|Now|至今)/i;
     const dateRangeRegex = /((19|20)\d{2}.*[-–to].*|Present|Current|Now|至今)/i;
 
     for (let i = 0; i < lines.length; i++) {

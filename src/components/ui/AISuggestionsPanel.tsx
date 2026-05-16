@@ -1,5 +1,5 @@
 import React from 'react';
-import { AISuggestion } from '../services/ai';
+import { AISuggestion } from '../../services/ai';
 import { useTranslation } from 'react-i18next';
 import { Check, X, Wand2 } from 'lucide-react';
 

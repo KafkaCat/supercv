@@ -5,7 +5,7 @@ import { EducationEditor } from './editor/EducationEditor';
 import { ProjectEditor } from './editor/ProjectEditor';
 import { SkillsEditor } from './editor/SkillsEditor';
 import { ResumePreview } from './preview/ResumePreview';
-import { Download, Plus, Languages, Wand2, FileText, Check, Cloud } from 'lucide-react';
+import { Download, Plus, Languages, Wand2, FileText, Check, Cloud, Copy } from 'lucide-react';
 import { useResumeStore, SectionKey } from '../store/useResumeStore';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
@@ -33,11 +33,11 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ onBackToLanding }) => {
   const { t, i18n } = useTranslation();
-  const { 
-    saveResume, createNewResume, translateToLanguage, translateContent, 
-    isSaving, isModified, currentResume, updateSection, setResume, 
+  const {
+    saveResume, createNewResume,
+    isSaving, isModified, currentResume, updateSection, setResume,
     appLanguage, setAppLanguage, sectionOrder, reorderSection,
-    aiState, closeAI, dismissSuggestion
+    aiState, closeAI, dismissSuggestion, duplicateCurrentResume
   } = useResumeStore();
 
   // Auto-save hook
@@ -48,7 +48,7 @@ export const Layout: React.FC<LayoutProps> = ({ onBackToLanding }) => {
     return () => clearInterval(interval);
   }, [saveResume]);
 
-  const [isImporting, setIsImporting] = useState(false);
+  const [_, setIsImporting] = useState(false);
   const [showImportFallback, setShowImportFallback] = useState(false);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false); // State for AddSectionModal
@@ -89,12 +89,6 @@ export const Layout: React.FC<LayoutProps> = ({ onBackToLanding }) => {
      const newLang = appLanguage === 'zh' ? 'en' : 'zh';
      setAppLanguage(newLang);
      i18n.changeLanguage(newLang);
-  };
-
-  const handleTranslateResume = async () => {
-    if (!confirm(t('messages.translate_confirm'))) return;
-    const targetLang: Resume['language'] = currentResume.language === 'zh' ? 'en' : 'zh';
-    await translateContent(targetLang);
   };
 
   const handleAddSection = (type: string, title: string) => {
@@ -374,6 +368,10 @@ export const Layout: React.FC<LayoutProps> = ({ onBackToLanding }) => {
             
             <button onClick={() => createNewResume()} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title={t('common.new')}>
               <Plus size={18} />
+            </button>
+
+            <button onClick={duplicateCurrentResume} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title={t('header.duplicate_resume')}>
+              <Copy size={18} />
             </button>
 
             <button onClick={handleLanguageToggle} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title={t('header.switch_language')}>

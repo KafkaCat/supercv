@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../db';
+import { listResumes, deleteResume as dbDeleteResume } from '../db';
 import { Resume } from '../types';
 import { useResumeStore } from '../store/useResumeStore';
 import { X, Clock, RotateCcw, Trash2, Download } from 'lucide-react';
@@ -17,7 +17,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({ onClose }) => {
   }, []);
 
   const loadHistory = async () => {
-    const all = await db.resumes.orderBy('updatedAt').reverse().toArray();
+    const all = await listResumes();
     setHistory(all);
   };
 
@@ -30,7 +30,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({ onClose }) => {
 
   const handleDelete = async (id: string) => {
     if (confirm('确定要删除此版本吗？')) {
-      await db.resumes.delete(id);
+      await dbDeleteResume(id);
       loadHistory();
     }
   };

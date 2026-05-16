@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { db } from '../db';
+import { listResumes, loadResume, saveResume } from '../db';
 import { Resume } from '../types';
-import { FileText, Plus, Settings, Edit2, Check, Trash2, Wand2, Upload } from 'lucide-react';
+import { FileText, Plus, Edit2, Trash2, Wand2, Upload } from 'lucide-react';
 import { useResumeStore } from '../store/useResumeStore';
 
 interface SessionSidebarProps {
@@ -18,7 +18,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onSelectSession,
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const loadSessions = async () => {
-    const all = await db.resumes.orderBy('updatedAt').reverse().toArray();
+    const all = await listResumes();
     setSessions(all);
   };
 
@@ -40,9 +40,9 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onSelectSession,
 
   const handleSaveTitle = async (id: string) => {
     if (editTitle.trim()) {
-      await db.resumes.update(id, { title: editTitle.trim() });
-      if (currentResume.id === id) {
-         // Trigger reload logic via parent or store if needed, mostly handled by useEffect deps
+      const existing = await loadResume(id);
+      if (existing) {
+        await saveResume({ ...existing, title: editTitle.trim() });
       }
       loadSessions();
     }

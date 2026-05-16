@@ -1,6 +1,5 @@
 import React from 'react';
 import { useResumeStore } from '../../store/useResumeStore';
-import { CustomSection } from '../../types';
 
 interface CustomSectionEditorProps {
   sectionId: string;

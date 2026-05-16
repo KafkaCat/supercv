@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { Resume, Education, Experience, Project, ChangeLogItem } from '../types';
-import { db } from '../db';
+import { Resume, ChangeLogItem } from '../types';
+import {
+  listResumes,
+  listResumesByLanguage,
+  loadResume as dbLoadResume,
+  saveResume as dbSaveResume,
+  saveResumes as dbSaveResumes,
+  deleteResume as dbDeleteResume,
+} from '../db';
 import { AISuggestion, analyzeContent } from '../services/ai';
 
 interface AIState {
@@ -43,7 +50,8 @@ interface ResumeState {
   translateContent: (targetLang: Resume['language']) => Promise<void>;
   exportAllData: () => Promise<void>;
   optimizeLayout: () => void;
-deleteResume: (id: string) => Promise<void>;
+  duplicateCurrentResume: () => Promise<void>;
+  deleteResume: (id: string) => Promise<void>;
   logChange: (type: 'update' | 'add' | 'delete', section: string, description: string, previousContent?: any) => void;
 }
 
@@ -67,6 +75,8 @@ const getStoredSectionOrder = (): SectionKey[] => {
 };
 
 const getBaseTitle = (title: string) => title.replace(titleSuffixPattern, '').trim();
+const copySuffixPattern = /\s*\((Copy|副本)\)\s*$/i;
+const getBaseTitleForVariant = (title: string) => getBaseTitle(title).replace(copySuffixPattern, '').trim() || title.trim();
 const normalizeValue = (value: string) => value.trim().toLowerCase();
 const normalizePhone = (value: string) => value.replace(/\D/g, '');
 const normalizeLink = (value: string) => value.trim().toLowerCase().replace(/\/+$/, '');
@@ -288,14 +298,11 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
   loadResume: async (id) => {
     set({ isLoading: true });
     try {
-      const resume = await db.resumes.get(id);
+      const resume = await dbLoadResume(id);
       if (resume) {
-        // Ensure new fields exist by merging with initial structure
         const merged = { ...initialResume, ...resume };
-        // Explicitly ensure arrays exist if not in initialResume somehow or overwritten
         if (!merged.projects) merged.projects = [];
         if (!merged.customSections) merged.customSections = [];
-        
         set({ currentResume: merged, isModified: false });
       }
     } finally {
@@ -308,8 +315,8 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
     try {
       const { currentResume } = get();
       const updated = { ...currentResume, updatedAt: Date.now() };
-      await db.resumes.put(updated);
-      set({ currentResume: updated });
+      const saved = await dbSaveResume(updated);
+      set({ currentResume: saved, isModified: false });
     } finally {
       set({ isSaving: false });
     }
@@ -350,9 +357,8 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
   translateToLanguage: async (language) => {
     const { currentResume } = get();
     const baseTitle = getBaseTitle(currentResume.title);
-    const candidates = (await db.resumes.toArray()).filter((resume) => (
-      resume.id !== currentResume.id && resume.language === language
-    ));
+    // Issue 4 regression guard: server-side language filter, exclude current id.
+    const candidates = await listResumesByLanguage(language, currentResume.id);
     const pickLatest = (list: Resume[]) => list.reduce((latest, item) => (
       item.updatedAt > latest.updatedAt ? item : latest
     ), list[0]);
@@ -378,17 +384,13 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
   },
 
   translateContent: async (targetLang) => {
-    const { currentResume } = get();
     // 1. Duplicate
     get().duplicateAsLanguage(targetLang);
     const { currentResume: newResume } = get();
-    
+
     // 2. Mock Translation (Heuristic)
     // In a real app, this would call an API.
     // Here we do simple keyword replacement for offline demo.
-    
-    const translatedProfile = { ...newResume.profile };
-    // translatedProfile.summary = simpleTranslate(translatedProfile.summary || '', targetLang); // Don't touch HTML for now, risky
 
     const translatedEducations = newResume.educations.map(edu => ({
       ...edu,
@@ -415,7 +417,7 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
   },
 
   exportAllData: async () => {
-    const allResumes = await db.resumes.toArray();
+    const allResumes = await listResumes();
     const dataStr = JSON.stringify(allResumes, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -455,12 +457,30 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
     get().logChange('update', 'Layout', 'Optimized layout settings');
   },
 
+  duplicateCurrentResume: async () => {
+    const { currentResume } = get();
+    const baseTitle = getBaseTitleForVariant(currentResume.title) || currentResume.title;
+    const copySuffix = currentResume.language === 'zh' ? ' (副本)' : ' (Copy)';
+    const now = Date.now();
+    const savedCurrent: Resume = { ...currentResume, updatedAt: now };
+    const newResume: Resume = {
+      ...currentResume,
+      id: uuidv4(),
+      updatedAt: now,
+      title: `${baseTitle}${copySuffix}`,
+      changeLog: [],
+    };
+    // Issue 4 regression guard: single batch upsert instead of 2 roundtrips.
+    await dbSaveResumes([savedCurrent, newResume]);
+    set({ currentResume: newResume, isModified: false });
+  },
+
   deleteResume: async (id: string) => {
-    await db.resumes.delete(id);
+    await dbDeleteResume(id);
     const { currentResume } = get();
     if (currentResume.id === id) {
        // If deleting current, load another or create new
-       const others = await db.resumes.toArray();
+       const others = await listResumes();
        if (others.length > 0) {
          set({ currentResume: others[0] });
        } else {

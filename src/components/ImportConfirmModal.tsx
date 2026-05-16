@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Resume, Profile, CustomSection } from '../types';
 import { X, Check, AlertCircle, Trash2, Plus, ChevronDown } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ImportConfirmModalProps {
@@ -11,14 +10,13 @@ interface ImportConfirmModalProps {
 }
 
 export const ImportConfirmModal: React.FC<ImportConfirmModalProps> = ({ parsedResume, onConfirm, onCancel }) => {
-  const { t } = useTranslation();
   const [profile, setProfile] = useState<Partial<Profile>>({ ...parsedResume.profile });
   const [hiddenSections, setHiddenSections] = useState<Set<string>>(new Set());
   const [showAddMenu, setShowAddMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Initialize state with parsed data
-  const [summary, setSummary] = useState(parsedResume.profile?.summary || '');
+  const [summary] = useState(parsedResume.profile?.summary || '');
   const [skills, setSkills] = useState(parsedResume.skills?.content || '');
   const [customSections, setCustomSections] = useState<CustomSection[]>(parsedResume.customSections || []);
 
@@ -220,7 +218,7 @@ export const ImportConfirmModal: React.FC<ImportConfirmModalProps> = ({ parsedRe
           )}
 
           {/* Academic Experience (Custom) */}
-          {customSections.map((section, index) => (
+          {customSections.map((section) => (
             <section key={section.id} className="relative group mt-6">
               <div className="flex justify-between items-center border-b pb-1 mb-3">
                 <input 

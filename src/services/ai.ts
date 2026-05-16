@@ -5,7 +5,7 @@ export interface AISuggestion {
   explanation: string;
 }
 
-export const analyzeContent = async (text: string, type: 'grammar' | 'tone' | 'clarity' = 'grammar'): Promise<AISuggestion[]> => {
+export const analyzeContent = async (text: string, _type: 'grammar' | 'tone' | 'clarity' = 'grammar'): Promise<AISuggestion[]> => {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 1500));
 

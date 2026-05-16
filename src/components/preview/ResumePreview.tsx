@@ -58,7 +58,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, {}>((props, ref) => {
     if (!projects || projects.length === 0) return null;
     return (
       <section className="mb-6">
-        <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{rt('sections.projects') || 'Projects'}</h2>
+        <h2 className="text-sm font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2 uppercase tracking-wider">{rt('projects') || 'Projects'}</h2>
         <div className="space-y-4">
           {projects.map(proj => (
             <div key={proj.id}>

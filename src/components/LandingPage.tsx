@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Sparkles, Paperclip, Mic, ArrowRight, CheckCircle, FileText, Upload } from 'lucide-react';
+import { Sparkles, Paperclip, Mic, ArrowRight, CheckCircle, FileText } from 'lucide-react';
 import { SessionSidebar } from './SessionSidebar';
 import { Resume } from '../types';
 import { useResumeStore } from '../store/useResumeStore';
@@ -15,7 +15,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGenerate, onResumeSe
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { setResume, createNewResume, currentResume } = useResumeStore();
+  const { setResume, createNewResume } = useResumeStore();
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
